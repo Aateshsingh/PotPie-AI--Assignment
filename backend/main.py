@@ -1,7 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from pydantic_ai import Agent
 import os
 from dotenv import load_dotenv
 import logging
@@ -30,17 +29,41 @@ class CodeReviewResponse(BaseModel):
     suggestions: list[str]
     severity_level: str
 
-# Initialize the Code Review Agent
-code_review_agent = Agent(
-    model="openrouter/meta-llama/llama-2-7b-chat",
-    system_prompt="""You are an expert code reviewer. Analyze the provided code and:
-1. Identify bugs, performance issues, and security concerns
-2. Provide specific improvement suggestions
-3. Rate severity (critical, high, medium, low)
-4. Suggest best practices
-
-Be concise but thorough. Focus on actionable feedback.""",
-)
+# Demo mode - simulated code review without API
+def get_demo_review(code: str, language: str) -> CodeReviewResponse:
+    """Simulate AI review without actual API call"""
+    suggestions = []
+    review = f"Code Review for {language}:\n\n"
+    
+    # Analyze code patterns
+    if len(code) < 50:
+        review += "✓ Code is concise\n"
+        suggestions.append("Consider adding more documentation")
+        severity = "low"
+    elif "import" in code.lower() or "require" in code.lower():
+        review += "✓ Proper dependency imports detected\n"
+        suggestions.append("Ensure all imports are used")
+        suggestions.append("Consider organizing imports at the top")
+        severity = "low"
+    else:
+        review += "✓ Basic code structure looks reasonable\n"
+        suggestions.append("Add type hints or annotations")
+        suggestions.append("Consider adding docstrings")
+        severity = "medium"
+    
+    if "error" in code.lower() or "except" in code.lower():
+        review += "✓ Error handling detected\n"
+    else:
+        suggestions.append("Add error handling")
+        severity = "medium"
+    
+    suggestions.append(f"Review code style and naming conventions for {language}")
+    
+    return CodeReviewResponse(
+        review=review,
+        suggestions=suggestions[:5],
+        severity_level=severity
+    )
 
 @app.get("/health")
 async def health_check():
@@ -50,7 +73,8 @@ async def health_check():
 @app.post("/review", response_model=CodeReviewResponse)
 async def review_code(request: CodeReviewRequest):
     """
-    Review code using the AI agent.
+    Review code using demo mode (no API key needed for testing).
+    In production, this would use Pydantic AI with OpenRouter.
     
     Args:
         request: CodeReviewRequest containing code and language
@@ -67,31 +91,12 @@ async def review_code(request: CodeReviewRequest):
         
         logger.info(f"Processing code review for {request.language}")
         
-        prompt = f"""Review this {request.language} code and provide:
-1. A summary review (2-3 sentences)
-2. 3-5 specific suggestions for improvement
-3. Overall severity level (critical/high/medium/low)
-
-Code:
-```{request.language}
-{request.code}
-```"""
-        
-        # Call the agent
-        result = code_review_agent.run_sync(prompt)
-        review_text = result.data if hasattr(result, 'data') else str(result)
-        
-        # Parse the response
-        suggestions = extract_suggestions(review_text)
-        severity = determine_severity(review_text)
+        # Use demo mode (simulated review without API)
+        result = get_demo_review(request.code, request.language)
         
         logger.info("Code review completed successfully")
         
-        return CodeReviewResponse(
-            review=review_text,
-            suggestions=suggestions,
-            severity_level=severity
-        )
+        return result
         
     except HTTPException:
         raise
