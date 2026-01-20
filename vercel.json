@@ -1,0 +1,13 @@
+{
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist",
+  "functions": {
+    "backend": {
+      "runtime": "python3.9",
+      "handler": "backend/main.handler"
+    }
+  },
+  "env": {
+    "OPENROUTER_API_KEY": "@openrouter_api_key"
+  }
+}
