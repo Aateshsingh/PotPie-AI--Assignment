@@ -1,12 +1,12 @@
 {
   "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist",
-  "functions": {
-    "backend": {
-      "runtime": "python3.9",
-      "handler": "backend/main.handler"
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://your-backend-vercel-url.vercel.app/api/$1"
     }
-  },
+  ],
   "env": {
     "OPENROUTER_API_KEY": "@openrouter_api_key"
   }
