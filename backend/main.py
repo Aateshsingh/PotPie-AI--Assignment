@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
@@ -64,6 +65,26 @@ def get_demo_review(code: str, language: str) -> CodeReviewResponse:
         suggestions=suggestions[:5],
         severity_level=severity
     )
+
+@app.get("/")
+async def root():
+    """Root endpoint - returns API info"""
+    return {
+        "name": "Code Review Agent API",
+        "version": "1.0.0",
+        "endpoints": {
+            "GET /": "This endpoint",
+            "GET /health": "Health check",
+            "POST /review": "Review a code snippet",
+            "POST /batch-review": "Review multiple code snippets"
+        },
+        "docs": "/docs"
+    }
+
+@app.get("/favicon.ico")
+async def favicon():
+    """Favicon endpoint - returns empty response to prevent 404"""
+    return {"status": "ok"}
 
 @app.get("/health")
 async def health_check():
@@ -138,6 +159,9 @@ async def batch_review(requests: list[CodeReviewRequest]):
             logger.error(f"Error in batch review: {str(e)}")
             results.append({"error": str(e)})
     return {"reviews": results}
+
+# Serve static frontend
+app.mount("/", StaticFiles(directory=".", html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn
